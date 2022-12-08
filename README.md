@@ -33,7 +33,7 @@ make clean build
 #### use Example: In Linux
 
 ```shell
-./WEB-FinalExam_linux_amd64 -t 20403413 
+./WEB-FinalExam_linux_amd64 -t=20403413 
 ```
 
 ## pay attention

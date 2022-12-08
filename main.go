@@ -5,10 +5,12 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"strconv"
 	"sync"
 	"web.misaki.world/FinalExam/aws"
+	"web.misaki.world/FinalExam/handler"
 	"web.misaki.world/FinalExam/xmly"
 )
 
@@ -22,6 +24,15 @@ var (
 )
 
 func main() {
+	log.SetFlags(log.Ldate | log.Ltime | log.Llongfile)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/album", handler.CrawlAlbum)
+
+	err := http.ListenAndServe(":80", mux)
+	log.Panicf("can not start server,Here is the reason:\n%v\n", err)
+}
+
+func main1() {
 	log.SetFlags(log.Ldate | log.Ltime | log.Llongfile)
 	argsAnalyze()
 	if TargetAlbumId == -1 && TargetAlbumIdFilePath == "" {

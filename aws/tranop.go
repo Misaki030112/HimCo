@@ -22,8 +22,8 @@ func ConvertToText(mp4Url, savePath string) {
 		Media: &types.Media{
 			MediaFileUri: aws.String(mp4Url),
 		},
-		TranscriptionJobName: aws.String(jobName),
-		IdentifyLanguage:     aws.Bool(true),
+		TranscriptionJobName:      aws.String(jobName),
+		IdentifyMultipleLanguages: aws.Bool(true),
 		LanguageOptions: []types.LanguageCode{
 			types.LanguageCodeEnUs,
 			types.LanguageCodeZhCn,
