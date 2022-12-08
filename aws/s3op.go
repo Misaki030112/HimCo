@@ -15,7 +15,7 @@ const BucketName = "audio-2022-12-08"
 func UploadFile(filePath string) (string, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
-		log.Printf("could't open the file %s to upload, Here is why:\n %v\n", filePath, err)
+		log.Panicf("could't open the file %s to upload, Here is why:\n %v\n", filePath, err)
 		return "", err
 	}
 	defer func(file *os.File) {
@@ -30,7 +30,7 @@ func UploadFile(filePath string) (string, error) {
 		Body:   file,
 	})
 	if err != nil {
-		log.Printf("Couldn't upload file %s to %s:%s. Here's why:\n %v\n",
+		log.Panicf("Couldn't upload file %s to %s:%s. Here's why:\n %v\n",
 			filePath, BucketName, filePath, err)
 		return "", err
 	}

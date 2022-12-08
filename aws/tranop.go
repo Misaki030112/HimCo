@@ -31,7 +31,7 @@ func ConvertToText(mp4Url, savePath string) {
 		MediaFormat: types.MediaFormatMp4,
 	})
 	if err != nil {
-		log.Printf("for %s start the transcription job error,reason\n%v\n", mp4Url, err)
+		log.Panicf("for %s start the transcription job error,reason\n%v\n", mp4Url, err)
 		return
 	}
 
@@ -40,33 +40,33 @@ func ConvertToText(mp4Url, savePath string) {
 			TranscriptionJobName: aws.String(jobName),
 		})
 		if err != nil {
-			log.Printf("try to get the TranscriptJob:[%s] fail,\n%v\n", jobName, err)
+			log.Panicf("try to get the TranscriptJob:[%s] fail,\n%v\n", jobName, err)
 			return
 		}
 		if jobOutPut.TranscriptionJob.TranscriptionJobStatus == types.TranscriptionJobStatusFailed {
-			log.Printf("the TranscriptJob:[%s] execute fail,\nReason: %s", jobName, *jobOutPut.TranscriptionJob.FailureReason)
+			log.Panicf("the TranscriptJob:[%s] execute fail,\nReason: %s", jobName, *jobOutPut.TranscriptionJob.FailureReason)
 			return
 		}
 		if jobOutPut.TranscriptionJob.TranscriptionJobStatus == types.TranscriptionJobStatusCompleted {
 			log.Printf("the TranscriptJob:[%s] execute success! completed Time:[%s]\n", jobName, jobOutPut.TranscriptionJob.CompletionTime.String())
 			jobDetail := jobOutPut.TranscriptionJob
 			if err := os.MkdirAll(savePath, 0750); err != nil {
-				log.Printf("can not create the file parent dir %s ....\n%v\n", savePath, err)
+				log.Panicf("can not create the file parent dir %s ....\n%v\n", savePath, err)
 			}
 			saveFilePath := filepath.Join(savePath, fmt.Sprintf("%s.json", jobName))
 			f, err := os.Create(saveFilePath)
 			if err != nil {
-				log.Printf("can not create the file %s .. \n%v\n", saveFilePath, err)
+				log.Panicf("can not create the file %s .. \n%v\n", saveFilePath, err)
 				return
 			}
 			res, err := http.Get(*jobDetail.Transcript.TranscriptFileUri)
 			if err != nil {
-				log.Printf("request  url %s error \n%v\n", *jobDetail.Transcript.TranscriptFileUri, err)
+				log.Panicf("request  url %s error \n%v\n", *jobDetail.Transcript.TranscriptFileUri, err)
 				return
 			}
 			by, err := io.ReadAll(res.Body)
 			if err != nil {
-				log.Printf("read the response data error\n%v\n", err)
+				log.Panicf("read the response data error\n%v\n", err)
 				return
 			}
 			jsonObj := make(map[string]interface{})
@@ -76,7 +76,7 @@ func ConvertToText(mp4Url, savePath string) {
 			by, _ = json.MarshalIndent(jsonObj, " ", "  ")
 			_, err = f.Write(by)
 			if err != nil {
-				log.Printf("write the response data to the file %s error\n", saveFilePath)
+				log.Panicf("write the response data to the file %s error\n", saveFilePath)
 			}
 			err = f.Close()
 			if err != nil {
