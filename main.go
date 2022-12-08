@@ -1,29 +1,53 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"log"
+	"os"
+	"strconv"
 	"sync"
 	"web.misaki.world/FinalExam/aws"
 	"web.misaki.world/FinalExam/xmly"
 )
 
 var (
-	ConvertCount    int
-	StoragePath     string
-	TargetAlbumId   int
-	OnlyConvert     bool
-	DisableDownLoad bool
+	ConvertCount          int
+	StoragePath           string
+	TargetAlbumId         int
+	OnlyConvert           bool
+	DisableDownLoad       bool
+	TargetAlbumIdFilePath string
 )
 
 func main() {
 	log.SetFlags(log.Ldate | log.Ltime | log.Llongfile)
 	argsAnalyze()
-	if TargetAlbumId == -1 {
-		log.Fatalf("please specify the Album Id....")
+	if TargetAlbumId == -1 && TargetAlbumIdFilePath == "" {
+		log.Fatalf("please specify the Album Id.... or specify the Album Id File")
 	}
-	pathDir := fmt.Sprintf("%s/%d", StoragePath, TargetAlbumId)
+	if TargetAlbumIdFilePath != "" {
+		f, err := os.OpenFile(TargetAlbumIdFilePath, os.O_RDONLY, 0222)
+		if err != nil {
+			log.Fatalf("open the file %s ,error:\n %v\n", TargetAlbumIdFilePath, err)
+		}
+		fileScanner := bufio.NewScanner(f)
+		for fileScanner.Scan() {
+			id, err := strconv.ParseInt(fileScanner.Text(), 10, 32)
+			if err != nil {
+				log.Fatalf("Content encountered in file that cannot be converted to a number，error:\n%v\n", err)
+			}
+			doHandler(int(id))
+		}
+		return
+	}
+	doHandler(TargetAlbumId)
+
+}
+
+func doHandler(id int) {
+	pathDir := fmt.Sprintf("%s/%d", StoragePath, id)
 	audioDir := fmt.Sprintf("%s/%s", pathDir, "audio")
 	convertPath := fmt.Sprintf("%s/%s", pathDir, "data")
 	if OnlyConvert {
@@ -37,7 +61,7 @@ func main() {
 		}
 		return
 	}
-	album := xmly.ObtainDetailForAlbumId(TargetAlbumId)
+	album := xmly.ObtainDetailForAlbumId(id)
 	if DisableDownLoad {
 		album.WriteFile(pathDir)
 		return
@@ -65,7 +89,6 @@ func main() {
 		}
 		aws.ConvertToText(s3Url, convertPath)
 	}
-
 }
 
 func argsAnalyze() {
@@ -74,5 +97,6 @@ func argsAnalyze() {
 	flag.IntVar(&TargetAlbumId, "t", -1, "the target Album Id")
 	flag.BoolVar(&OnlyConvert, "n", false, "only convert to text")
 	flag.BoolVar(&DisableDownLoad, "d", false, "disable download")
+	flag.StringVar(&TargetAlbumIdFilePath, "f", "", "the target Album Id File")
 	flag.Parse()
 }
