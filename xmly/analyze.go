@@ -15,10 +15,10 @@ const (
 // AnalyzeXMLY Analyze all Channels on the Himalayan website
 func AnalyzeXMLY() []*Channel {
 	channels := GetInitialChannels()
-	analyzeRes := make([]*Channel, 26, 26)
+	analyzeRes := make([]*Channel, 26, 30)
 	wg := sync.WaitGroup{}
 	for id, channel := range channels {
-		wg.Add(2)
+		wg.Add(1)
 		go analyzeChannel(id, channel, &wg)
 	}
 	wg.Wait()
@@ -41,6 +41,7 @@ func analyzeChannel(id int, channel *Channel, wg *sync.WaitGroup) {
 	res = res["data"].(map[string]interface{})
 	subChannelsJson := res["channels"].([]interface{})
 	for _, subChannelJson := range subChannelsJson {
+		wg.Add(1)
 		m := subChannelJson.(map[string]interface{})
 		metadataValueId := int64(m["relationMetadataValueId"].(float64))
 		subChannel := SubChannel{ChannelName: m["channelName"].(string)}
@@ -97,30 +98,30 @@ func computeTop3(subChannel *SubChannel, albums []*Album, wg *sync.WaitGroup) {
 	log.Printf("start compute Top3 of subChannel[ChannelName=%s]", subChannel.ChannelName)
 	qAlbum := make(PriorityQueueAlbum, 0, 3)
 	i := 0
-	for ; i <= 2; i++ {
-		qAlbum.Push(albums[i])
-	}
 	heap.Init(&qAlbum)
 	for ; i < len(albums); i++ {
 		heap.Push(&qAlbum, albums[i])
-		heap.Pop(&qAlbum)
-	}
-	subChannel.ShowTop3 = make([]*Album, 3, 3)
-	for i = 2; i >= 0; i-- {
-		subChannel.ShowTop3[i] = heap.Pop(&qAlbum).(*Album)
-	}
-	i = 0
-	album := albums[i]
-	qItem := PriorityQueueItem(album.Top3Audio())
-	heap.Init(&qItem)
-	for i = 1; i < len(albums); i++ {
-		for _, v := range (albums[i]).Top3Audio() {
-			heap.Push(&qItem, v)
-			heap.Pop(&qItem)
+		if len(qAlbum) > 3 {
+			heap.Pop(&qAlbum)
 		}
 	}
-	subChannel.AudioTop3 = make([]*Item, 3, 3)
-	for i = 2; i >= 0; i-- {
-		subChannel.AudioTop3[i] = heap.Pop(&qItem).(*Item)
+	subChannel.ShowTop3 = make([]*Album, 0, 3)
+	for i = min(2, len(qAlbum)-1); i >= 0; i-- {
+		subChannel.ShowTop3 = append(subChannel.ShowTop3, heap.Pop(&qAlbum).(*Album))
+	}
+	i = 0
+	qItem := make(PriorityQueueItem, 0, 3)
+	heap.Init(&qItem)
+	for i = 0; i < len(albums); i++ {
+		for _, v := range (albums[i]).Top3Audio() {
+			heap.Push(&qItem, v)
+			if len(qItem) > 3 {
+				heap.Pop(&qItem)
+			}
+		}
+	}
+	subChannel.AudioTop3 = make([]*Item, 0, 3)
+	for i = min(2, len(qItem)-1); i >= 0; i-- {
+		subChannel.AudioTop3 = append(subChannel.AudioTop3, heap.Pop(&qItem).(*Item))
 	}
 }

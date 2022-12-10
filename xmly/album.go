@@ -114,17 +114,16 @@ func (album *Album) Top3Audio() []*Item {
 	qItem := make(PriorityQueueItem, 0, 3)
 	i := 0
 	itemList := album.List
-	for ; i < 2; i++ {
-		qItem.Push(&itemList[i])
-	}
 	heap.Init(&qItem)
 	for ; i < len(itemList); i++ {
 		heap.Push(&qItem, &itemList[i])
-		heap.Pop(&qItem)
+		if len(qItem) > 3 {
+			heap.Pop(&qItem)
+		}
 	}
-	res := make([]*Item, 3, 3)
-	for i = 2; i >= 0; i-- {
-		res[i] = heap.Pop(&qItem).(*Item)
+	res := make([]*Item, 0, 3)
+	for i = min(2, len(qItem)-1); i >= 0; i-- {
+		res = append(res, heap.Pop(&qItem).(*Item))
 	}
 	return res
 }

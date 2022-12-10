@@ -151,7 +151,7 @@ func Get(url string) map[string]interface{} {
 	}
 	jsonObj := make(map[string]interface{})
 	if err := json.Unmarshal(body, &jsonObj); err != nil {
-		log.Panicf("the request %s response body can not deserializes to jsonObj ...\n%v", url, err)
+		log.Printf("the request %s response body can not deserializes to jsonObj ...\n%v", url, err)
 	}
 
 	return jsonObj
