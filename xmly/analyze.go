@@ -74,7 +74,10 @@ func analyzeChannel(id int, channel *Channel, wg *sync.WaitGroup) {
 		vipCount := int64(0)
 		finishCount := int64(0)
 		for i := 1; i <= (int(total)+99)/100; i++ {
-			res = Get(fmt.Sprintf(AlbumsUrl, i, 100, metadataValueId))
+			res, err = EnhanceGet(fmt.Sprintf(AlbumsUrl, i, 100, metadataValueId))
+			for err != nil {
+				res, err = EnhanceGet(fmt.Sprintf(AlbumsUrl, i, 100, metadataValueId))
+			}
 			res = res["data"].(map[string]interface{})
 			albumsJson = res["albums"].([]interface{})
 			for _, mJson := range albumsJson {
