@@ -116,12 +116,10 @@ func ObtainDetailForAlbumId(id int, wg *sync.WaitGroup) *Album {
 // EnhanceGet Enhance the Get func and For anti-reptile mechanism
 func EnhanceGet(url string) (map[string]interface{}, error) {
 	res := Get(url)
-	if res == nil || res["ret"] == nil || int(res["ret"].(float64)) != 200 {
-		for i := 1; res == nil || res["ret"] == nil || i <= 6 && int(res["ret"].(float64)) != 200; i++ {
-			log.Printf("The Himalaya server rejected the request[%s] and will start reconnecting after 50ms, the %d retry", url, i)
-			time.Sleep(50 * time.Microsecond)
-			res = Get(url)
-		}
+	for i := 1; (res == nil || res["ret"] == nil || int(res["ret"].(float64)) != 200) && i < 50; i++ {
+		log.Printf("The Himalaya server rejected the request[%s] and will start reconnecting after 200ms, the %d retry", url, i)
+		time.Sleep(200 * time.Microsecond)
+		res = Get(url)
 	}
 	if res == nil || res["ret"] == nil || int(res["ret"].(float64)) != 200 {
 		log.Printf("request[%s] to Himalaya server error..", url)
@@ -149,7 +147,8 @@ func Get(url string) map[string]interface{} {
 	}(res.Body)
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		log.Panicf("the request %s read response error \n%v", url, err)
+		log.Printf("the request %s read response error \n%v", url, err)
+		return nil
 	}
 	jsonObj := make(map[string]interface{})
 	if err := json.Unmarshal(body, &jsonObj); err != nil {
