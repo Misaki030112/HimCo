@@ -79,8 +79,10 @@ func analyzeChannel(id int, channel *Channel, wg *sync.WaitGroup) {
 				}
 			}
 		}
-		subChannel.EndState = int(finishCount * 100 / total)
-		subChannel.VipRate = int(vipCount * 100 / total)
+		if total != 0 {
+			subChannel.EndState = int(finishCount * 100 / total)
+			subChannel.VipRate = int(vipCount * 100 / total)
+		}
 		allTotal += total
 		parentVipCount += vipCount
 		parentFinishCount += finishCount
@@ -88,9 +90,10 @@ func analyzeChannel(id int, channel *Channel, wg *sync.WaitGroup) {
 		channel.SubChannels = append(channel.SubChannels, subChannel)
 	}
 	channel.SubChannelSize = len(channel.SubChannels)
-	channel.VipRate = int(parentVipCount * 100 / allTotal)
-	channel.EndState = int(parentFinishCount * 100 / allTotal)
-
+	if allTotal != 0 {
+		channel.VipRate = int(parentVipCount * 100 / allTotal)
+		channel.EndState = int(parentFinishCount * 100 / allTotal)
+	}
 }
 
 func computeTop3(subChannel *SubChannel, albums []*Album, wg *sync.WaitGroup) {

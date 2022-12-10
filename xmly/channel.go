@@ -1,21 +1,21 @@
 package xmly
 
 type Channel struct {
-	ChannelName    string
-	SubChannels    []SubChannel
-	VipRate        int
-	EndState       int
-	SubChannelSize int
-	AlbumCount     int64
+	ChannelName    string       `json:"channelName,omitempty"`
+	SubChannels    []SubChannel `json:"subChannels,omitempty"`
+	VipRate        int          `json:"vipRate,omitempty"`
+	EndState       int          `json:"endState,omitempty"`
+	SubChannelSize int          `json:"subChannelSize,omitempty"`
+	AlbumCount     int64        `json:"albumCount,omitempty"`
 }
 
 type SubChannel struct {
-	ChannelName string
-	VipRate     int
-	EndState    int
-	AlbumCount  int64
-	ShowTop3    []*Album
-	AudioTop3   []*Item
+	ChannelName string   `json:"channelName,omitempty"`
+	VipRate     int      `json:"vipRate,omitempty"`
+	EndState    int      `json:"endState,omitempty"`
+	AlbumCount  int64    `json:"albumCount,omitempty"`
+	ShowTop3    []*Album `json:"showTop3,omitempty"`
+	AudioTop3   []*Item  `json:"audioTop3,omitempty"`
 }
 
 func GetInitialChannels() map[int]*Channel {
