@@ -40,12 +40,19 @@ func analyzeChannel(id int, channel *Channel, wg *sync.WaitGroup) {
 	channel.SubChannels = make([]SubChannel, 0, 30)
 	res = res["data"].(map[string]interface{})
 	subChannelsJson := res["channels"].([]interface{})
+
 	for _, subChannelJson := range subChannelsJson {
 		wg.Add(1)
+		computeWg := sync.WaitGroup{}
+
 		m := subChannelJson.(map[string]interface{})
 		metadataValueId := int64(m["relationMetadataValueId"].(float64))
 		subChannel := SubChannel{ChannelName: m["channelName"].(string)}
-		res = Get(fmt.Sprintf(AlbumsUrl, 1, 50, metadataValueId))
+		res, err := EnhanceGet(fmt.Sprintf(AlbumsUrl, 1, 50, metadataValueId))
+		// Must ensure the first Page can get Albums
+		for err != nil {
+			res, err = EnhanceGet(fmt.Sprintf(AlbumsUrl, 1, 50, metadataValueId))
+		}
 		res = res["data"].(map[string]interface{})
 
 		//only compute the first page audios of item It's enough
@@ -53,7 +60,8 @@ func analyzeChannel(id int, channel *Channel, wg *sync.WaitGroup) {
 		albums := make([]*Album, 0, 100)
 		for _, mJson := range albumsJson {
 			m = mJson.(map[string]interface{})
-			album := ObtainDetailForAlbumId(int(m["albumId"].(float64)))
+			computeWg.Add(1)
+			album := ObtainDetailForAlbumId(int(m["albumId"].(float64)), &computeWg)
 			if album == nil {
 				log.Printf("can not get the album[id=%d]", int(m["albumId"].(float64)))
 				continue
@@ -86,7 +94,7 @@ func analyzeChannel(id int, channel *Channel, wg *sync.WaitGroup) {
 		allTotal += total
 		parentVipCount += vipCount
 		parentFinishCount += finishCount
-		go computeTop3(&subChannel, albums, wg)
+		go computeTop3(&subChannel, albums, wg, &computeWg)
 		channel.SubChannels = append(channel.SubChannels, subChannel)
 	}
 	channel.SubChannelSize = len(channel.SubChannels)
@@ -96,8 +104,9 @@ func analyzeChannel(id int, channel *Channel, wg *sync.WaitGroup) {
 	}
 }
 
-func computeTop3(subChannel *SubChannel, albums []*Album, wg *sync.WaitGroup) {
+func computeTop3(subChannel *SubChannel, albums []*Album, wg, computeWg *sync.WaitGroup) {
 	defer wg.Done()
+	computeWg.Wait()
 	log.Printf("start compute Top3 of subChannel[ChannelName=%s]", subChannel.ChannelName)
 	qAlbum := make(PriorityQueueAlbum, 0, 3)
 	i := 0
@@ -127,4 +136,5 @@ func computeTop3(subChannel *SubChannel, albums []*Album, wg *sync.WaitGroup) {
 	for i = min(2, len(qItem)-1); i >= 0; i-- {
 		subChannel.AudioTop3 = append(subChannel.AudioTop3, heap.Pop(&qItem).(*Item))
 	}
+	log.Printf("end compute Top3 of subChannel[ChannelName=%s]", subChannel.ChannelName)
 }

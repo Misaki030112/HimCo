@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -22,7 +23,7 @@ var client = &http.Client{}
 
 // ObtainDetailForAlbumId  get the Album by Album-Id Example :
 // https://www.ximalaya.com/album/2907021 the Id is 2907021
-func ObtainDetailForAlbumId(id int) *Album {
+func ObtainDetailForAlbumId(id int, wg *sync.WaitGroup) *Album {
 	album := &Album{Id: id}
 	album.Labels = make([]string, 0)
 	album.List = make([]Item, 0)
@@ -58,53 +59,57 @@ func ObtainDetailForAlbumId(id int) *Album {
 			album.Mark = float32(res["albumScore"].(float64))
 		}
 	}
-
-	//Get the Album Items information
 	pageNum := 1
 	res, err = EnhanceGet(fmt.Sprintf(ItemTrackUrl, id, pageNum))
 	if err != nil {
 		log.Printf("can not get any Items of Album[id=%d] err:\n%v\n", id, err)
+		wg.Done()
 		return album
 	}
 	res = res["data"].(map[string]interface{})
 	pageCount := (int(res["trackTotalCount"].(float64)) + int(res["pageSize"].(float64)) - 1) / int(res["pageSize"].(float64))
-	for ; pageNum <= pageCount; pageNum++ {
-		res, err = EnhanceGet(fmt.Sprintf(ItemTrackUrl, id, pageNum))
-		if err != nil {
-			log.Printf("can nor get this page's items pageNum=%d,pageCount=%d,Album[id=%d],err:\n%v\n", pageNum, pageCount, id)
-			continue
-		}
-		res = res["data"].(map[string]interface{})
-		for _, m := range res["tracks"].([]interface{}) {
-			m := m.(map[string]interface{})
-			trackId := int(m["trackId"].(float64))
-			item := Item{
-				Subscribe:       float32(m["playCount"].(float64)) / 1e4,
-				OriginPlayCount: int64(m["playCount"].(float64)),
-				Id:              trackId,
-			}
-			if m["title"] != nil {
-				item.Name = m["title"].(string)
-			}
-			if m["createDateFormat"] != nil {
-				item.Date = m["createDateFormat"].(string)
-			}
-			resource, err := EnhanceGet(fmt.Sprintf(ItemResourceUrl, trackId, 1))
+	go func() {
+		defer wg.Done()
+		//Get the Album Items information
+		for ; pageNum <= pageCount; pageNum++ {
+			res, err = EnhanceGet(fmt.Sprintf(ItemTrackUrl, id, pageNum))
 			if err != nil {
-				log.Printf("can not get this Item[id=%d] information of Album[id=%d]..err:\n%v\n", trackId, id, err)
+				log.Printf("can nor get this page's items pageNum=%d,pageCount=%d,Album[id=%d],err:\n%v\n", pageNum, pageCount, id)
 				continue
 			}
-			resource = (resource["data"]).(map[string]interface{})
-			if resource["src"] != nil {
-				item.HasAudio = true
-				item.AudioUrl = resource["src"].(string)
-			} else {
-				item.HasAudio = false
-				//log.Printf("the Album[%d] Item[%d]'s audio m4a file can not obtain,it has been encryption", id, trackId)
+			res = res["data"].(map[string]interface{})
+			for _, m := range res["tracks"].([]interface{}) {
+				m := m.(map[string]interface{})
+				trackId := int(m["trackId"].(float64))
+				item := Item{
+					Subscribe:       float32(m["playCount"].(float64)) / 1e4,
+					OriginPlayCount: int64(m["playCount"].(float64)),
+					Id:              trackId,
+				}
+				if m["title"] != nil {
+					item.Name = m["title"].(string)
+				}
+				if m["createDateFormat"] != nil {
+					item.Date = m["createDateFormat"].(string)
+				}
+				resource, err := EnhanceGet(fmt.Sprintf(ItemResourceUrl, trackId, 1))
+				if err != nil {
+					log.Printf("can not get this Item[id=%d] information of Album[id=%d]..err:\n%v\n", trackId, id, err)
+					continue
+				}
+				resource = (resource["data"]).(map[string]interface{})
+				if resource["src"] != nil {
+					item.HasAudio = true
+					item.AudioUrl = resource["src"].(string)
+				} else {
+					item.HasAudio = false
+					//log.Printf("the Album[%d] Item[%d]'s audio m4a file can not obtain,it has been encryption", id, trackId)
+				}
+				album.List = append(album.List, item)
 			}
-			album.List = append(album.List, item)
 		}
-	}
+
+	}()
 	return album
 }
 
@@ -116,8 +121,8 @@ func EnhanceGet(url string) (map[string]interface{}, error) {
 	}
 	if int(res["ret"].(float64)) != 200 {
 		for i := 1; i <= 3 && int(res["ret"].(float64)) != 200; i++ {
-			log.Printf("The Himalaya server rejected the request[%s] and will start reconnecting after 50ms, the %d retry", url, i)
-			time.Sleep(50 * time.Microsecond)
+			log.Printf("The Himalaya server rejected the request[%s] and will start reconnecting after 100ms, the %d retry", url, i)
+			time.Sleep(100 * time.Microsecond)
 			res = Get(url)
 		}
 	}

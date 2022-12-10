@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"path"
 	"strconv"
+	"sync"
 	"web.misaki.world/FinalExam/aws"
 	"web.misaki.world/FinalExam/xmly"
 )
@@ -31,7 +32,10 @@ func CrawlAlbum(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		log.Printf("start the fetching Task , fetch Album[id=%d]", id)
 		pathDir := path.Join(storageParentDir, strconv.FormatInt(id, 10))
-		album := xmly.ObtainDetailForAlbumId(int(id))
+		wg := sync.WaitGroup{}
+		wg.Add(1)
+		album := xmly.ObtainDetailForAlbumId(int(id), &wg)
+		wg.Wait()
 		album.WriteFile(pathDir)
 		if audioDownload {
 			audioDir := path.Join(pathDir, "audio")
