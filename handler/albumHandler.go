@@ -15,12 +15,12 @@ import (
 // Example  /album?id=203132&audioDownload=false
 func CrawlAlbum(w http.ResponseWriter, r *http.Request) {
 	if !r.URL.Query().Has("id") {
-		Reply(&w, "please input Query Param [id=?]....")
+		ReplyToText(w, "please input Query Param [id=?]....")
 		return
 	}
 	id, err := strconv.ParseInt(r.URL.Query().Get("id"), 10, 32)
 	if err != nil {
-		Reply(&w, "The input Query Param [id=?] is incorrect, it should be a 32-bit integer....")
+		ReplyToText(w, "The input Query Param [id=?] is incorrect, it should be a 32-bit integer....")
 	}
 	audioDownload := false
 	if r.URL.Query().Has("audioDownload") {
@@ -39,19 +39,19 @@ func CrawlAlbum(w http.ResponseWriter, r *http.Request) {
 		}
 		log.Printf("complete the fetching Task , fetch Album[id=%d]", id)
 	}()
-	Reply(&w, fmt.Sprintf("okk , The server starts fetching the Album[id=%d]", id))
+	ReplyToText(w, fmt.Sprintf("okk , The server starts fetching the Album[id=%d]", id))
 }
 
 // ConvertAudioToJson Convert audio to Json file and save
 // Example /convert?id=203132&count=2
 func ConvertAudioToJson(w http.ResponseWriter, r *http.Request) {
 	if !r.URL.Query().Has("id") {
-		Reply(&w, "please input Query Param [id=?]....")
+		ReplyToText(w, "please input Query Param [id=?]....")
 		return
 	}
 	id, err := strconv.ParseInt(r.URL.Query().Get("id"), 10, 32)
 	if err != nil {
-		Reply(&w, "The input Query Param [id=?] is incorrect, it should be a 32-bit integer....")
+		ReplyToText(w, "The input Query Param [id=?] is incorrect, it should be a 32-bit integer....")
 	}
 
 	count := int64(1)
@@ -74,12 +74,14 @@ func ConvertAudioToJson(w http.ResponseWriter, r *http.Request) {
 		}
 		log.Printf("complete the audio convert Task , audio of Album[id=%d]", id)
 	}()
-	Reply(&w, "okk , The server starts convert the audio of the Album[id=%d]")
+	ReplyToText(w, "okk , The server starts convert the audio of the Album[id=%d]")
 }
 
-func Reply(w *http.ResponseWriter, s string) {
-	_, err := io.WriteString(*w, s)
+func ReplyToText(w http.ResponseWriter, s string) {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	_, err := io.WriteString(w, s)
 	if err != nil {
 		log.Printf("response string [%s] to client error\n%v\n", s, err)
 	}
+
 }

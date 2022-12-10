@@ -14,12 +14,13 @@ var (
 )
 
 func main() {
-	log.SetFlags(log.Ldate | log.Ltime | log.Llongfile)
+	log.SetFlags(log.Ldate | log.Ltime)
 	argsAnalyze()
 	ctx, cancelCtx := context.WithCancel(context.Background())
 	mux := http.NewServeMux()
 	mux.HandleFunc("/album", handler.CrawlAlbum)
 	mux.HandleFunc("/convert", handler.ConvertAudioToJson)
+	mux.HandleFunc("/analyzeJson", handler.AnalyzeOutJson)
 	server := &http.Server{
 		Addr:    ":80",
 		Handler: mux,

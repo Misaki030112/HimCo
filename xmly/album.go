@@ -1,6 +1,7 @@
 package xmly
 
 import (
+	"container/heap"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,20 +13,24 @@ import (
 )
 
 type Album struct {
-	Title     string   `json:"title,omitempty"`
-	Mark      float32  `json:"mark,omitempty"`
-	Subscribe float32  `json:"subscribe,omitempty"`
-	Labels    []string `json:"lable,omitempty"`
-	Desc      string   `json:"desc,omitempty"`
-	List      []Item   `json:"list,omitempty"`
+	Id              int      `json:"id"`
+	Title           string   `json:"title,omitempty"`
+	Mark            float32  `json:"mark,omitempty"`
+	OriginPlayCount int64    `json:"-"`
+	Subscribe       float32  `json:"subscribe,omitempty"`
+	Labels          []string `json:"lable,omitempty"`
+	Desc            string   `json:"desc,omitempty"`
+	List            []Item   `json:"list,omitempty"`
 }
 
 type Item struct {
-	Name      string  `json:"name,omitempty"`
-	Subscribe float32 `json:"subscribe,omitempty"`
-	Date      string  `json:"date,omitempty"`
-	HasAudio  bool    `json:"-"`
-	AudioUrl  string  `json:"-"`
+	Id              int     `json:"id"`
+	Name            string  `json:"name,omitempty"`
+	OriginPlayCount int64   `json:"-"`
+	Subscribe       float32 `json:"subscribe,omitempty"`
+	Date            string  `json:"date,omitempty"`
+	HasAudio        bool    `json:"has-audio,omitempty"`
+	AudioUrl        string  `json:"src,omitempty"`
 }
 
 func (album *Album) WriteFile(path string) {
@@ -105,10 +110,79 @@ func (album *Album) batchDownload(path string, l int, r int) {
 	}
 }
 
+func (album *Album) Top3Audio() []*Item {
+	qItem := make(PriorityQueueItem, 0, 3)
+	i := 0
+	itemList := album.List
+	for ; i < 2; i++ {
+		qItem.Push(&itemList[i])
+	}
+	heap.Init(&qItem)
+	for ; i < len(itemList); i++ {
+		heap.Push(&qItem, &itemList[i])
+		heap.Pop(&qItem)
+	}
+	res := make([]*Item, 3, 3)
+	for i = 2; i >= 0; i-- {
+		res[i] = heap.Pop(&qItem).(*Item)
+	}
+	return res
+}
+
 func min(a, b int) int {
 	if a > b {
 		return b
 	} else {
 		return a
 	}
+}
+
+type PriorityQueueAlbum []*Album
+
+func (pq PriorityQueueAlbum) Len() int {
+	return len(pq)
+}
+func (pq PriorityQueueAlbum) Less(i, j int) bool {
+	return pq[i].OriginPlayCount < pq[j].OriginPlayCount
+}
+func (pq PriorityQueueAlbum) Swap(i, j int) {
+	pq[i], pq[j] = pq[j], pq[i]
+}
+func (pq *PriorityQueueAlbum) Push(x any) {
+	*pq = append(*pq, x.(*Album))
+}
+func (pq *PriorityQueueAlbum) Pop() any {
+	old := *pq
+	n := len(old)
+	item := old[n-1]
+	old[n-1] = nil // avoid memory leak
+	*pq = old[0 : n-1]
+	return item
+}
+
+type PriorityQueueItem []*Item
+
+func (pq PriorityQueueItem) Len() int {
+	return len(pq)
+}
+
+func (pq PriorityQueueItem) Less(i, j int) bool {
+	return pq[i].OriginPlayCount < pq[j].OriginPlayCount
+}
+
+func (pq PriorityQueueItem) Swap(i, j int) {
+	pq[i], pq[j] = pq[j], pq[i]
+}
+
+func (pq *PriorityQueueItem) Push(x any) {
+	*pq = append(*pq, x.(*Item))
+}
+
+func (pq *PriorityQueueItem) Pop() any {
+	old := *pq
+	n := len(old)
+	item := old[n-1]
+	old[n-1] = nil // avoid memory leak
+	*pq = old[0 : n-1]
+	return item
 }
