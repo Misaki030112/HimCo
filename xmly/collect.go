@@ -116,17 +116,14 @@ func ObtainDetailForAlbumId(id int, wg *sync.WaitGroup) *Album {
 // EnhanceGet Enhance the Get func and For anti-reptile mechanism
 func EnhanceGet(url string) (map[string]interface{}, error) {
 	res := Get(url)
-	if res == nil {
-		return nil, errors.New(fmt.Sprintf("can nor request to %s", url))
-	}
-	if int(res["ret"].(float64)) != 200 {
-		for i := 1; i <= 3 && int(res["ret"].(float64)) != 200; i++ {
-			log.Printf("The Himalaya server rejected the request[%s] and will start reconnecting after 100ms, the %d retry", url, i)
-			time.Sleep(100 * time.Microsecond)
+	if res == nil || res["ret"] == nil || int(res["ret"].(float64)) != 200 {
+		for i := 1; res == nil || res["ret"] == nil || i <= 6 && int(res["ret"].(float64)) != 200; i++ {
+			log.Printf("The Himalaya server rejected the request[%s] and will start reconnecting after 50ms, the %d retry", url, i)
+			time.Sleep(50 * time.Microsecond)
 			res = Get(url)
 		}
 	}
-	if int(res["ret"].(float64)) != 200 {
+	if res == nil || res["ret"] == nil || int(res["ret"].(float64)) != 200 {
 		log.Printf("request[%s] to Himalaya server error..", url)
 		return nil, errors.New(fmt.Sprintf("can nor request to %s", url))
 	}
