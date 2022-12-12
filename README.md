@@ -26,8 +26,9 @@ Linux:
 ```
 Windows:
 ```shell
-./_windows_amd64.exe
+./WEB-FinalExam_windows_amd64.exe
 ```
+
 
 
 ## pay attention
