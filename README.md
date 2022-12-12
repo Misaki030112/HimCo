@@ -16,25 +16,19 @@ make clean build
 
 ## usage
 
-#### First , This is a command line tool ，Here are his parameters
+#### The 0.0.1 Version is Command Line Tool But Now is a WebServer, There are some endpoints exposed
 
->  -t < int >  Specify target AlbumId  Default **-1**
-> 
->  -f < string > Specify the target AlbumId file Default **""**
-> 
->  -d < bool >  Whether to disable downloading audio on execution Default **false**
-> 
->  -c < int > Specify The amount of audio that will be converted Default **0**
-> 
->  -s < string > Specify the storage parent Dir Path Default **" ./ "**
-> 
->  -n < bool > Whether to convert audio only Default **false**
+First you must start the WebServer after you complied the source with thd command 
 
-#### use Example: In Linux
-
+Linux:
 ```shell
-./WEB-FinalExam_linux_amd64 -t=20403413 
+./WEB-FinalExam_linux_amd64
 ```
+Windows:
+```shell
+./_windows_amd64.exe
+```
+
 
 ## pay attention
 * Before using the audio conversion function, please make sure that the operating 

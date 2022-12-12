@@ -20,7 +20,7 @@ type Album struct {
 	Subscribe       float32  `json:"subscribe,omitempty"`
 	Labels          []string `json:"lable,omitempty"`
 	Desc            string   `json:"desc,omitempty"`
-	List            []Item   `json:"list,omitempty"`
+	List            []*Item  `json:"list,omitempty"`
 }
 
 type Item struct {
@@ -110,13 +110,14 @@ func (album *Album) batchDownload(path string, l int, r int) {
 	}
 }
 
+// Top3Audio Analyze the Top3 PlayCount Audio of the Album
 func (album *Album) Top3Audio() []*Item {
 	qItem := make(PriorityQueueItem, 0, 3)
 	i := 0
 	itemList := album.List
 	heap.Init(&qItem)
 	for ; i < len(itemList); i++ {
-		heap.Push(&qItem, &itemList[i])
+		heap.Push(&qItem, itemList[i])
 		if len(qItem) > 3 {
 			heap.Pop(&qItem)
 		}
@@ -142,7 +143,7 @@ func (pq PriorityQueueAlbum) Len() int {
 	return len(pq)
 }
 func (pq PriorityQueueAlbum) Less(i, j int) bool {
-	return pq[i].OriginPlayCount < pq[j].OriginPlayCount
+	return pq[i].OriginPlayCount > pq[j].OriginPlayCount
 }
 func (pq PriorityQueueAlbum) Swap(i, j int) {
 	pq[i], pq[j] = pq[j], pq[i]
@@ -153,9 +154,9 @@ func (pq *PriorityQueueAlbum) Push(x any) {
 func (pq *PriorityQueueAlbum) Pop() any {
 	old := *pq
 	n := len(old)
-	item := old[n-1]
-	old[n-1] = nil // avoid memory leak
-	*pq = old[0 : n-1]
+	item := old[0]
+	old[0] = nil // avoid memory leak
+	*pq = old[1:n]
 	return item
 }
 
@@ -166,7 +167,7 @@ func (pq PriorityQueueItem) Len() int {
 }
 
 func (pq PriorityQueueItem) Less(i, j int) bool {
-	return pq[i].OriginPlayCount < pq[j].OriginPlayCount
+	return pq[i].OriginPlayCount > pq[j].OriginPlayCount
 }
 
 func (pq PriorityQueueItem) Swap(i, j int) {
@@ -180,8 +181,8 @@ func (pq *PriorityQueueItem) Push(x any) {
 func (pq *PriorityQueueItem) Pop() any {
 	old := *pq
 	n := len(old)
-	item := old[n-1]
-	old[n-1] = nil // avoid memory leak
-	*pq = old[0 : n-1]
+	item := old[0]
+	old[0] = nil // avoid memory leak
+	*pq = old[1:n]
 	return item
 }

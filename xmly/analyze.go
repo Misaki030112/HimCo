@@ -15,7 +15,7 @@ const (
 // AnalyzeXMLY Analyze all Channels on the Himalayan website
 func AnalyzeXMLY() []*Channel {
 	channels := GetInitialChannels()
-	analyzeRes := make([]*Channel, 26, 30)
+	analyzeRes := make([]*Channel, 0, 30)
 	wg := sync.WaitGroup{}
 	for id, channel := range channels {
 		wg.Add(1)
@@ -29,6 +29,7 @@ func AnalyzeXMLY() []*Channel {
 	return analyzeRes
 }
 
+// analyzeChannel Analyze the parent Channel,And put task to analyze the child Channel
 func analyzeChannel(id int, channel *Channel, wg *sync.WaitGroup) {
 	defer wg.Done()
 	res := Get(fmt.Sprintf(SubChannelsUrl, id))
@@ -37,35 +38,34 @@ func analyzeChannel(id int, channel *Channel, wg *sync.WaitGroup) {
 	parentFinishCount := int64(0)
 	allTotal := int64(0)
 
-	channel.SubChannels = make([]SubChannel, 0, 30)
+	channel.SubChannels = make([]*SubChannel, 0, 30)
 	res = res["data"].(map[string]interface{})
 	subChannelsJson := res["channels"].([]interface{})
 
 	for _, subChannelJson := range subChannelsJson {
 		wg.Add(1)
-		computeWg := sync.WaitGroup{}
 
 		m := subChannelJson.(map[string]interface{})
 		metadataValueId := int64(m["relationMetadataValueId"].(float64))
-		subChannel := SubChannel{ChannelName: m["channelName"].(string)}
+		subChannel := &SubChannel{ChannelName: m["channelName"].(string)}
 		res, err := EnhanceGet(fmt.Sprintf(AlbumsUrl, 1, 50, metadataValueId))
+
 		// Must ensure the first Page can get Albums
-		for err != nil {
+		// Enhanced processing for anti-crawling mechanism
+		// Sometimes Himalaya will return you a status code of 200 but not a value for albums[].
+		for err != nil || len((res["data"].(map[string]interface{}))["albums"].([]interface{})) == 0 {
 			res, err = EnhanceGet(fmt.Sprintf(AlbumsUrl, 1, 50, metadataValueId))
 		}
 		res = res["data"].(map[string]interface{})
-
 		//only compute the first page audios of item It's enough
 		albumsJson := res["albums"].([]interface{})
-		albums := make([]*Album, 0, 100)
+		albums := make([]*Album, 0, 50)
+		computeWg := sync.WaitGroup{}
+
 		for _, mJson := range albumsJson {
 			m = mJson.(map[string]interface{})
 			computeWg.Add(1)
 			album := ObtainDetailForAlbumId(int(m["albumId"].(float64)), &computeWg)
-			if album == nil {
-				log.Printf("can not get the album[id=%d]", int(m["albumId"].(float64)))
-				continue
-			}
 			albums = append(albums, album)
 		}
 
@@ -93,22 +93,25 @@ func analyzeChannel(id int, channel *Channel, wg *sync.WaitGroup) {
 			}
 		}
 		if total != 0 {
-			subChannel.EndState = int(finishCount * 100 / total)
+			subChannel.EndRate = int(finishCount * 100 / total)
 			subChannel.VipRate = int(vipCount * 100 / total)
 		}
 		allTotal += total
 		parentVipCount += vipCount
 		parentFinishCount += finishCount
-		go computeTop3(&subChannel, albums, wg, &computeWg)
+
+		go computeTop3(subChannel, albums, wg, &computeWg)
+		albums = nil
 		channel.SubChannels = append(channel.SubChannels, subChannel)
 	}
 	channel.SubChannelSize = len(channel.SubChannels)
 	if allTotal != 0 {
 		channel.VipRate = int(parentVipCount * 100 / allTotal)
-		channel.EndState = int(parentFinishCount * 100 / allTotal)
+		channel.EndRate = int(parentFinishCount * 100 / allTotal)
 	}
 }
 
+// computeTop3 compute Node compute the top3 resources
 func computeTop3(subChannel *SubChannel, albums []*Album, wg, computeWg *sync.WaitGroup) {
 	defer wg.Done()
 	computeWg.Wait()
@@ -122,6 +125,7 @@ func computeTop3(subChannel *SubChannel, albums []*Album, wg, computeWg *sync.Wa
 			heap.Pop(&qAlbum)
 		}
 	}
+
 	subChannel.ShowTop3 = make([]*Album, 0, 3)
 	for i = min(2, len(qAlbum)-1); i >= 0; i-- {
 		subChannel.ShowTop3 = append(subChannel.ShowTop3, heap.Pop(&qAlbum).(*Album))
@@ -140,6 +144,9 @@ func computeTop3(subChannel *SubChannel, albums []*Album, wg, computeWg *sync.Wa
 	subChannel.AudioTop3 = make([]*Item, 0, 3)
 	for i = min(2, len(qItem)-1); i >= 0; i-- {
 		subChannel.AudioTop3 = append(subChannel.AudioTop3, heap.Pop(&qItem).(*Item))
+	}
+	for _, v := range subChannel.ShowTop3 {
+		v.List = nil
 	}
 	log.Printf("end compute Top3 of subChannel[ChannelName=%s]", subChannel.ChannelName)
 }

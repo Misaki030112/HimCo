@@ -1,18 +1,18 @@
 package xmly
 
 type Channel struct {
-	ChannelName    string       `json:"channelName,omitempty"`
-	SubChannels    []SubChannel `json:"subChannels,omitempty"`
-	VipRate        int          `json:"vipRate,omitempty"`
-	EndState       int          `json:"endState,omitempty"`
-	SubChannelSize int          `json:"subChannelSize,omitempty"`
-	AlbumCount     int64        `json:"albumCount,omitempty"`
+	ChannelName    string        `json:"channelName,omitempty"`
+	SubChannels    []*SubChannel `json:"subChannels,omitempty"`
+	VipRate        int           `json:"vipRate"`
+	EndRate        int           `json:"endState"`
+	SubChannelSize int           `json:"subChannelSize,omitempty"`
+	AlbumCount     int64         `json:"albumCount,omitempty"`
 }
 
 type SubChannel struct {
 	ChannelName string   `json:"channelName,omitempty"`
-	VipRate     int      `json:"vipRate,omitempty"`
-	EndState    int      `json:"endState,omitempty"`
+	VipRate     int      `json:"vipRate"`
+	EndRate     int      `json:"endState"`
 	AlbumCount  int64    `json:"albumCount,omitempty"`
 	ShowTop3    []*Album `json:"showTop3,omitempty"`
 	AudioTop3   []*Item  `json:"audioTop3,omitempty"`

@@ -49,8 +49,8 @@ func TestObtainDetailForAlbumId(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			wg := sync.WaitGroup{}
-			wg.Add(2)
-			got := xmly.ObtainDetailForAlbumId(tt.args.id)
+			wg.Add(3)
+			got := xmly.ObtainDetailForAlbumId(tt.args.id, &wg)
 			go func() {
 				got.WriteFile("20403413")
 				wg.Done()

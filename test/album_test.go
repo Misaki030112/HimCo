@@ -12,7 +12,7 @@ func TestAlbum_DownLoadAudio(t *testing.T) {
 		Subscribe float32
 		Labels    []string
 		Desc      string
-		List      []xmly.Item
+		List      []*xmly.Item
 	}
 	type args struct {
 		path string
@@ -26,7 +26,7 @@ func TestAlbum_DownLoadAudio(t *testing.T) {
 		{
 			name: "case 1",
 			fields: fields{
-				List: []xmly.Item{
+				List: []*xmly.Item{
 					{
 						HasAudio: true,
 						AudioUrl: "https://aod.cos.tx.xmcdn.com/group54/M07/57/F0/wKgLclwxLiShNNynAA_4a_o7K-k365.m4a",
@@ -60,7 +60,7 @@ func TestAlbum_WriteFile(t *testing.T) {
 		Subscribe float32
 		Labels    []string
 		Desc      string
-		List      []xmly.Item
+		List      []*xmly.Item
 	}
 	type args struct {
 		path string
@@ -79,7 +79,7 @@ func TestAlbum_WriteFile(t *testing.T) {
 				Subscribe: 207.9,
 				Labels:    []string{"口语", "英语", "上班族", "听力"},
 				Desc:      "跟Lily一起说英语去旅行的训练营即将开营啰！ 有144节线上课程，针对24个不同的旅游场景循环加深强度，课后你还可以缴交自己的录音还有老师亲自帮助你纠正不好的发音，让你立即开口说英语，在",
-				List: []xmly.Item{
+				List: []*xmly.Item{
 					{
 						Name:      "Lesson 1：在机场 At the Airport",
 						Subscribe: 16.9,

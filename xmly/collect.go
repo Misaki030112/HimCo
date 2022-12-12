@@ -23,10 +23,11 @@ var client = &http.Client{}
 
 // ObtainDetailForAlbumId  get the Album by Album-Id Example :
 // https://www.ximalaya.com/album/2907021 the Id is 2907021
+// warn: the func just return the album not ensure whether the album Items is ready,you can pass wg call wg.Wait()
 func ObtainDetailForAlbumId(id int, wg *sync.WaitGroup) *Album {
 	album := &Album{Id: id}
-	album.Labels = make([]string, 0)
-	album.List = make([]Item, 0)
+	album.Labels = make([]string, 0, 5)
+	album.List = make([]*Item, 0, 300)
 	//Get the Album ontology information
 	res, err := EnhanceGet(fmt.Sprintf(BasicInfoUrl, id))
 	if err != nil {
@@ -46,7 +47,9 @@ func ObtainDetailForAlbumId(id int, wg *sync.WaitGroup) *Album {
 	if err == nil {
 		res = res["data"].(map[string]interface{})
 		for _, m := range res["channels"].([]interface{}) {
-			album.Labels = append(album.Labels, m.(map[string]interface{})["channelName"].(string))
+			if m.(map[string]interface{})["channelName"] != nil {
+				album.Labels = append(album.Labels, m.(map[string]interface{})["channelName"].(string))
+			}
 		}
 	} else {
 		log.Printf("%v", err)
@@ -81,7 +84,7 @@ func ObtainDetailForAlbumId(id int, wg *sync.WaitGroup) *Album {
 			for _, m := range res["tracks"].([]interface{}) {
 				m := m.(map[string]interface{})
 				trackId := int(m["trackId"].(float64))
-				item := Item{
+				item := &Item{
 					Subscribe:       float32(m["playCount"].(float64)) / 1e4,
 					OriginPlayCount: int64(m["playCount"].(float64)),
 					Id:              trackId,
