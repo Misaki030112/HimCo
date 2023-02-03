@@ -1,4 +1,4 @@
-# WebServer-FinalExam
+# HimCo
 
 ## prerequisite
 * Go 1.19
@@ -22,11 +22,11 @@ First you must start the WebServer after you complied the source with thd comman
 
 Linux:
 ```shell
-./WEB-FinalExam_linux_amd64
+./HimCo_linux_amd64
 ```
 Windows:
 ```shell
-./WEB-FinalExam_windows_amd64.exe
+./HimCo_windows_amd64.exe
 ```
 Second Some of the endpoints we provide
 
