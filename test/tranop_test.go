@@ -3,7 +3,7 @@ package test
 import (
 	"log"
 	"testing"
-	"web.misaki.world/FinalExam/aws"
+	"web.misaki.world/HimCo/aws"
 )
 
 func TestConvertToText(t *testing.T) {

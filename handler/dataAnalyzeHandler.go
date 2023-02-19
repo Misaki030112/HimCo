@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"web.misaki.world/FinalExam/xmly"
+	"web.misaki.world/HimCo/xmly"
 )
 
 // AnalyzeOutJson Analyze the Himalaya website data to get JSON data report

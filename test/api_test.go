@@ -3,7 +3,7 @@ package test
 import (
 	"sync"
 	"testing"
-	"web.misaki.world/FinalExam/xmly"
+	"web.misaki.world/HimCo/xmly"
 )
 
 func TestGet(t *testing.T) {

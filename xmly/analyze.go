@@ -9,7 +9,7 @@ import (
 
 const (
 	SubChannelsUrl = "https://www.ximalaya.com/revision/metadata/v2/group/channels?groupId=%d"
-	AlbumsUrl      = "https://www.ximalaya.com/revision/metadata/v2/channel/albums?sort=3&pageNum=%d&pageSize=%d&metadataValueId=%d"
+	AlbumsUrl      = "https://www.ximalaya.com/revision/metadata/v2/channel/albums?sort=%d&pageNum=%d&pageSize=%d&metadataValueId=%d"
 )
 
 // AnalyzeXMLY Analyze all Channels on the Himalayan website
@@ -48,13 +48,13 @@ func analyzeChannel(id int, channel *Channel, wg *sync.WaitGroup) {
 		m := subChannelJson.(map[string]interface{})
 		metadataValueId := int64(m["relationMetadataValueId"].(float64))
 		subChannel := &SubChannel{ChannelName: m["channelName"].(string)}
-		res, err := EnhanceGet(fmt.Sprintf(AlbumsUrl, 1, 50, metadataValueId))
+		res, err := EnhanceGet(fmt.Sprintf(AlbumsUrl, 3, 1, 50, metadataValueId))
 
 		// Must ensure the first Page can get Albums
 		// Enhanced processing for anti-crawling mechanism
 		// Sometimes Himalaya will return you a status code of 200 but not a value for albums[].
 		for err != nil || len((res["data"].(map[string]interface{}))["albums"].([]interface{})) == 0 {
-			res, err = EnhanceGet(fmt.Sprintf(AlbumsUrl, 1, 50, metadataValueId))
+			res, err = EnhanceGet(fmt.Sprintf(AlbumsUrl, 3, 1, 50, metadataValueId))
 		}
 		res = res["data"].(map[string]interface{})
 		//only compute the first page audios of item It's enough
@@ -74,7 +74,7 @@ func analyzeChannel(id int, channel *Channel, wg *sync.WaitGroup) {
 		vipCount := int64(0)
 		finishCount := int64(0)
 		for i := 1; i <= (int(total)+99)/100; i++ {
-			res, err = EnhanceGet(fmt.Sprintf(AlbumsUrl, i, 100, metadataValueId))
+			res, err = EnhanceGet(fmt.Sprintf(AlbumsUrl, 3, i, 100, metadataValueId))
 			if res == nil {
 				subChannel.AlbumCount -= 100
 				continue

@@ -6,7 +6,7 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"web.misaki.world/FinalExam/handler"
+	"web.misaki.world/HimCo/handler"
 )
 
 var (

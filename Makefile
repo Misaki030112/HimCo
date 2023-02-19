@@ -1,3 +1,5 @@
+# go build -o HimCo_windows_amd64.exe
+
 EXECUTABLE=HimCo
 WINDOWS=$(EXECUTABLE)_windows_amd64.exe
 LINUX=$(EXECUTABLE)_linux_amd64

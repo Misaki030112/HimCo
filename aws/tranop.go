@@ -17,7 +17,7 @@ import (
 )
 
 func ConvertToText(mp4Url, savePath string) {
-	jobName := mp4Url[strings.LastIndex(mp4Url, "/")+1:]
+	jobName := time.Now().Format("2006-01-02-15-04-05-") + mp4Url[strings.LastIndex(mp4Url, "/")+1:]
 	_, err := TrClient.StartTranscriptionJob(context.TODO(), &transcribe.StartTranscriptionJobInput{
 		Media: &types.Media{
 			MediaFileUri: aws.String(mp4Url),

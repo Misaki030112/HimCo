@@ -1,8 +1,13 @@
 package test
 
 import (
+	"fmt"
+	"path"
+	"strconv"
+	"sync"
+	"sync/atomic"
 	"testing"
-	"web.misaki.world/FinalExam/xmly"
+	"web.misaki.world/HimCo/xmly"
 )
 
 func TestAlbum_DownLoadAudio(t *testing.T) {
@@ -110,4 +115,63 @@ func TestAlbum_WriteFile(t *testing.T) {
 			album.WriteFile(tt.args.path)
 		})
 	}
+}
+
+func TestStatic_Album100W(t *testing.T) {
+	var sum int32 = 0
+	channels := xmly.GetInitialChannels()
+	allWg := sync.WaitGroup{}
+	for id, _ := range channels {
+		res := xmly.Get(fmt.Sprintf(xmly.SubChannelsUrl, id))
+		res = res["data"].(map[string]interface{})
+		subChannelsJson := res["channels"].([]interface{})
+		for _, subChannelJson := range subChannelsJson {
+			allWg.Add(1)
+			go func() {
+				wg := sync.WaitGroup{}
+				albums := make([]*xmly.Album, 0, 3005)
+				m := subChannelJson.(map[string]interface{})
+				metadataValueId := int64(m["relationMetadataValueId"].(float64))
+				res1, err := xmly.EnhanceGet(fmt.Sprintf(xmly.AlbumsUrl, 2, 1, 1, metadataValueId))
+				for err != nil || len((res1["data"].(map[string]interface{}))["albums"].([]interface{})) == 0 {
+					res1, err = xmly.EnhanceGet(fmt.Sprintf(xmly.AlbumsUrl, 2, 1, 1, metadataValueId))
+				}
+				res1 = res1["data"].(map[string]interface{})
+				total := int64(res1["total"].(float64))
+				page := int(total) / 100
+
+				for i := 1; i <= page; i++ {
+					res1, err = xmly.EnhanceGet(fmt.Sprintf(xmly.AlbumsUrl, 2, i, 100, metadataValueId))
+					for err != nil || len((res1["data"].(map[string]interface{}))["albums"].([]interface{})) == 0 {
+						res1, err = xmly.EnhanceGet(fmt.Sprintf(xmly.AlbumsUrl, 2, i, 100, metadataValueId))
+					}
+					res1 = res1["data"].(map[string]interface{})
+					albumsJson := res1["albums"].([]interface{})
+					for _, mJson := range albumsJson {
+						m1 := mJson.(map[string]interface{})
+						AlbumId := int(m1["albumId"].(float64))
+						if atomic.AddInt32(&sum, 1) > 1e6 {
+							wg.Wait()
+							for _, albumFile := range albums {
+								albumFile.WriteFile(path.Join("../books", strconv.FormatInt(int64(albumFile.Id), 10)))
+							}
+							allWg.Done()
+							return
+						}
+						t.Logf("currently fetched  %d book", sum)
+						wg.Add(1)
+						album := xmly.ObtainDetailForAlbumId(AlbumId, &wg)
+						albums = append(albums, album)
+					}
+				}
+				wg.Wait()
+				for _, albumFile := range albums {
+					albumFile.WriteFile(path.Join("../books", strconv.FormatInt(int64(albumFile.Id), 10)))
+				}
+				allWg.Done()
+			}()
+		}
+		allWg.Wait()
+	}
+
 }

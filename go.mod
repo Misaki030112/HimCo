@@ -1,4 +1,4 @@
-module web.misaki.world/FinalExam
+module web.misaki.world/HimCo
 
 go 1.19
 

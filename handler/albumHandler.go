@@ -8,12 +8,13 @@ import (
 	"path"
 	"strconv"
 	"sync"
-	"web.misaki.world/FinalExam/aws"
-	"web.misaki.world/FinalExam/xmly"
+
+	"web.misaki.world/HimCo/aws"
+	"web.misaki.world/HimCo/xmly"
 )
 
 // CrawlAlbum  deal with the request to CrawlAlbum
-// Example  /album?id=203132&audioDownload=false
+// Example  /album?id=284570&audioDownload=true
 func CrawlAlbum(w http.ResponseWriter, r *http.Request) {
 	if !r.URL.Query().Has("id") {
 		ReplyToText(w, "please input Query Param [id=?]....")
@@ -47,7 +48,7 @@ func CrawlAlbum(w http.ResponseWriter, r *http.Request) {
 }
 
 // ConvertAudioToJson Convert audio to Json file and save
-// Example /convert?id=203132&count=2
+// Example /convert?id=284570&count=1
 func ConvertAudioToJson(w http.ResponseWriter, r *http.Request) {
 	if !r.URL.Query().Has("id") {
 		ReplyToText(w, "please input Query Param [id=?]....")

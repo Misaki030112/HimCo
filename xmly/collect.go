@@ -31,6 +31,7 @@ func ObtainDetailForAlbumId(id int, wg *sync.WaitGroup) *Album {
 	//Get the Album ontology information
 	res, err := EnhanceGet(fmt.Sprintf(BasicInfoUrl, id))
 	if err != nil {
+		wg.Done()
 		log.Printf("%v", err)
 		return nil
 	}
@@ -66,66 +67,76 @@ func ObtainDetailForAlbumId(id int, wg *sync.WaitGroup) *Album {
 	res, err = EnhanceGet(fmt.Sprintf(ItemTrackUrl, id, pageNum))
 	if err != nil {
 		log.Printf("can not get any Items of Album[id=%d] err:\n%v\n", id, err)
-		wg.Done()
+		if wg != nil {
+			wg.Done()
+		}
 		return album
 	}
 	res = res["data"].(map[string]interface{})
 	pageCount := (int(res["trackTotalCount"].(float64)) + int(res["pageSize"].(float64)) - 1) / int(res["pageSize"].(float64))
-	go func() {
-		defer wg.Done()
-		//Get the Album Items information
-		for ; pageNum <= pageCount; pageNum++ {
-			res, err = EnhanceGet(fmt.Sprintf(ItemTrackUrl, id, pageNum))
+	if wg != nil {
+		go func() {
+			defer wg.Done()
+			//Get the Album Items information
+			getAlbumItems(pageNum, pageCount, res, err, id, album)
+
+		}()
+	} else {
+		getAlbumItems(pageNum, pageCount, res, err, id, album)
+	}
+	return album
+}
+
+func getAlbumItems(pageNum int, pageCount int, res map[string]interface{}, err error, id int, album *Album) {
+	for ; pageNum <= pageCount; pageNum++ {
+		res, err = EnhanceGet(fmt.Sprintf(ItemTrackUrl, id, pageNum))
+		if err != nil {
+			log.Printf("can nor get this page's items pageNum=%d,pageCount=%d,Album[id=%d],err:\n%v\n", pageNum, pageCount, id)
+			continue
+		}
+		res = res["data"].(map[string]interface{})
+		for _, m := range res["tracks"].([]interface{}) {
+			m := m.(map[string]interface{})
+			trackId := int(m["trackId"].(float64))
+			item := &Item{
+				Subscribe:       float32(m["playCount"].(float64)) / 1e4,
+				OriginPlayCount: int64(m["playCount"].(float64)),
+				Id:              trackId,
+			}
+			if m["title"] != nil {
+				item.Name = m["title"].(string)
+			}
+			if m["createDateFormat"] != nil {
+				item.Date = m["createDateFormat"].(string)
+			}
+			resource, err := EnhanceGet(fmt.Sprintf(ItemResourceUrl, trackId, 1))
 			if err != nil {
-				log.Printf("can nor get this page's items pageNum=%d,pageCount=%d,Album[id=%d],err:\n%v\n", pageNum, pageCount, id)
+				log.Printf("can not get this Item[id=%d] information of Album[id=%d]..err:\n%v\n", trackId, id, err)
 				continue
 			}
-			res = res["data"].(map[string]interface{})
-			for _, m := range res["tracks"].([]interface{}) {
-				m := m.(map[string]interface{})
-				trackId := int(m["trackId"].(float64))
-				item := &Item{
-					Subscribe:       float32(m["playCount"].(float64)) / 1e4,
-					OriginPlayCount: int64(m["playCount"].(float64)),
-					Id:              trackId,
-				}
-				if m["title"] != nil {
-					item.Name = m["title"].(string)
-				}
-				if m["createDateFormat"] != nil {
-					item.Date = m["createDateFormat"].(string)
-				}
-				resource, err := EnhanceGet(fmt.Sprintf(ItemResourceUrl, trackId, 1))
-				if err != nil {
-					log.Printf("can not get this Item[id=%d] information of Album[id=%d]..err:\n%v\n", trackId, id, err)
-					continue
-				}
-				resource = (resource["data"]).(map[string]interface{})
-				if resource["src"] != nil {
-					item.HasAudio = true
-					item.AudioUrl = resource["src"].(string)
-				} else {
-					item.HasAudio = false
-					//log.Printf("the Album[%d] Item[%d]'s audio m4a file can not obtain,it has been encryption", id, trackId)
-				}
-				album.List = append(album.List, item)
+			resource = (resource["data"]).(map[string]interface{})
+			if resource["src"] != nil {
+				item.HasAudio = true
+				item.AudioUrl = resource["src"].(string)
+			} else {
+				item.HasAudio = false
+				//log.Printf("the Album[%d] Item[%d]'s audio m4a file can not obtain,it has been encryption", id, trackId)
 			}
+			album.List = append(album.List, item)
 		}
-
-	}()
-	return album
+	}
 }
 
 // EnhanceGet Enhance the Get func and For anti-reptile mechanism
 func EnhanceGet(url string) (map[string]interface{}, error) {
 	res := Get(url)
 	for i := 1; (res == nil || res["ret"] == nil || int(res["ret"].(float64)) != 200) && i < 50; i++ {
-		log.Printf("The Himalaya server rejected the request[%s] and will start reconnecting after 200ms, the %d retry", url, i)
+		//log.Printf("The Himalaya server rejected the request[%s] and will start reconnecting after 200ms, the %d retry", url, i)
 		time.Sleep(200 * time.Microsecond)
 		res = Get(url)
 	}
 	if res == nil || res["ret"] == nil || int(res["ret"].(float64)) != 200 {
-		log.Printf("request[%s] to Himalaya server error..", url)
+		//log.Printf("request[%s] to Himalaya server error..", url)
 		return nil, errors.New(fmt.Sprintf("can nor request to %s", url))
 	}
 	return res, nil

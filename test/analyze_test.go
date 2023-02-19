@@ -6,7 +6,7 @@ import (
 	"os"
 	"path"
 	"testing"
-	"web.misaki.world/FinalExam/xmly"
+	"web.misaki.world/HimCo/xmly"
 )
 
 func TestAnalyzeXMLY(t *testing.T) {

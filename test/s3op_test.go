@@ -2,7 +2,7 @@ package test
 
 import (
 	"testing"
-	"web.misaki.world/FinalExam/aws"
+	"web.misaki.world/HimCo/aws"
 )
 
 func TestUploadFile(t *testing.T) {
